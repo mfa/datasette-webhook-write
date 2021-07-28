@@ -28,7 +28,7 @@ setup(
     version=VERSION,
     packages=["datasette_webhook_write"],
     entry_points={"datasette": ["webhook_write = datasette_webhook_write"]},
-    install_requires=["datasette"],
+    install_requires=["datasette", "sqlite-utils"],
     extras_require={"test": ["httpx", "pytest", "pytest-asyncio"]},
     tests_require=["datasette-webhook-write[test]"],
     python_requires=">=3.6",
