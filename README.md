@@ -5,7 +5,7 @@
 [![Tests](https://github.com/mfa/datasette-webhook-write/workflows/Test/badge.svg)](https://github.com/mfa/datasette-webhook-write/actions?query=workflow%3ATest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/mfa/datasette-webhook-write/blob/main/LICENSE)
 
-Datasette plugin to write to databae via verified webhooks
+Datasette plugin to write to database via verified webhooks
 
 ## Installation
 
@@ -13,7 +13,7 @@ Install this plugin in the same environment as Datasette.
 
     $ datasette install datasette-webhook-write
 
-## Usage
+## Usage (datasette/receiving side)
 
 This plugin allows writing to a datasette database via hmac-signed http POST calls.
 
@@ -32,6 +32,26 @@ plugins:
 ```
 
 WEBHOOK_SECRET is set as environment variable.
+
+
+## Usage (pushing side)
+
+The json data pushed has to be signed with the WEBHOOK_SECRET and added to the headers of the POST call.
+
+Generate the hmac signature (where `document` is the data you want to send, and `WEBKOOK_SECRET` is the secret only pushing+receving parties should know):
+```
+digest = hmac.new(
+    key=WEBHOOK_SECRET.encode(),
+    msg=json.dumps(document).encode(),
+    digestmod=hashlib.sha1,
+)
+
+header = {
+    "X-SIGNATURE": f"sha1={digest.hexdigest()}",
+}
+```
+
+The pushed data is written to the database only when secret+document are generating the same digest.
 
 
 ## Development
