@@ -31,14 +31,14 @@ plugins:
       - "collection_id"
 ```
 
-WEBHOOK_SECRET is set as environment variable.
+`WEBHOOK_SECRET` is set as environment variable.
 
 
 ## Usage (pushing side)
 
-The json data pushed has to be signed with the WEBHOOK_SECRET and added to the headers of the POST call.
+The json data pushed has to be signed with the `WEBHOOK_SECRET` and added to the headers of the POST call.
 
-Generate the hmac signature (where `document` is the data you want to send, and `WEBKOOK_SECRET` is the secret only pushing+receving parties should know):
+Generate the hmac signature (where `document` is the data you want to send, and `WEBHOOK_SECRET` is the secret only pushing+receving parties should know):
 ```
 digest = hmac.new(
     key=WEBHOOK_SECRET.encode(),
