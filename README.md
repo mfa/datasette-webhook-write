@@ -13,6 +13,7 @@ Install this plugin in the same environment as Datasette.
 
     $ datasette install datasette-webhook-write
 
+
 ## Usage (datasette/receiving side)
 
 This plugin allows writing to a datasette database via hmac-signed http POST calls.
@@ -32,6 +33,8 @@ plugins:
 ```
 
 `WEBHOOK_SECRET` is set as environment variable.
+
+The url to upload to the datasette instance is ``/-/webhook-write/``.
 
 
 ## Usage (pushing side)
