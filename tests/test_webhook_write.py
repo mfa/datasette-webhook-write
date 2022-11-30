@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import datetime
 import hashlib
 import hmac
 import json
@@ -73,15 +74,22 @@ async def test_malformed_json(ds):
         assert 400 == response.status_code
 
 
-@pytest.fixture
-def document():
+@pytest.fixture(name="document")
+def document_future():
     return {"uid": 1, "category": "cat1", "data": "abc"}
 
 
-def calculate_signature(document):
+@pytest.fixture(name="document2")
+def document2_fixture(document):
+    d = copy.copy(document)
+    d["text_modified"] = datetime.datetime.utcnow().isoformat()
+    return d
+
+
+def calculate_signature(data):
     digest = hmac.new(
         key=TEST_SECRET.encode(),
-        msg=json.dumps(document).encode(),
+        msg=json.dumps(data).encode(),
         digestmod=hashlib.sha1,
     )
     return {
@@ -92,6 +100,11 @@ def calculate_signature(document):
 @pytest.fixture()
 def signature(document):
     return calculate_signature(document)
+
+
+@pytest.fixture()
+def signature2(document2):
+    return calculate_signature(document2)
 
 
 @pytest.mark.asyncio
@@ -125,35 +138,41 @@ async def test_actual_write(ds, document, signature):
         response = await client.get("http://localhost/test/table1.json?_shape=array")
         data = response.json()[0]
 
+        # test if text_modified was added
+        assert data.get("text_modified")
+        assert data["text_modified"].startswith("20")
+
         # rowid is only set, when no "pk" was set
+        # text_modified is added if not exisiting in document
         data.pop("rowid")
+        data.pop("text_modified")
         assert data == document
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("pk", ("uid", ("uid", "category")))
-async def test_write_replace(db_path, document, signature, pk):
+async def test_write_replace(db_path, document2, signature2, pk):
     metadata = copy.deepcopy(TEST_METADATA)
     metadata["plugins"]["datasette-webhook-write"]["use_pk"] = pk
     ds = Datasette([db_path], metadata=metadata)
 
     async with httpx.AsyncClient(app=ds.app()) as client:
         response = await client.post(
-            "http://localhost/-/webhook-write/", json=document, headers=signature
+            "http://localhost/-/webhook-write/", json=document2, headers=signature2
         )
         assert 200 == response.status_code
 
         # check if write was successful
         response = await client.get("http://localhost/test/table1.json?_shape=array")
         data = response.json()
-        assert data[0] == document
+        assert data[0] == document2
 
         # replacement
-        document["data"] = "xyz"
-        new_signature = calculate_signature(document)
+        document2["data"] = "xyz"
+        new_signature = calculate_signature(document2)
 
         response = await client.post(
-            "http://localhost/-/webhook-write/", json=document, headers=new_signature
+            "http://localhost/-/webhook-write/", json=document2, headers=new_signature
         )
         assert 200 == response.status_code
 
@@ -161,4 +180,4 @@ async def test_write_replace(db_path, document, signature, pk):
         response = await client.get("http://localhost/test/table1.json?_shape=array")
         data = response.json()
         assert len(data) == 1
-        assert data[0] == document
+        assert data[0] == document2

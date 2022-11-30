@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import hmac
 import json
@@ -72,6 +73,9 @@ async def insert_webhook_data(request, datasette):
     signature = request.headers.get(http_header_name)
     if not check_signature(signature, data, secret):
         return Response.json({"error": "Permission denied", "status": 403}, status=403)
+
+    if "text_modified" not in post_json:
+        post_json["text_modified"] = datetime.datetime.utcnow().isoformat()
 
     def insert(conn):
         db = sqlite_utils.Database(conn)
