@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, "3.10"]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -21,12 +21,12 @@ jobs:
         name: Configure pip caching
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install -e '.[test]'
+          python -m pip install -e '.[test]'
       - name: Run tests
         run: |
           pytest
@@ -43,16 +43,20 @@ jobs:
         name: Configure pip caching
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-publish-pip-${{ hashFiles('**/setup.py') }}
+          key: ${{ runner.os }}-publish-pip-${{ hashFiles('**/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-publish-pip-
       - name: Install dependencies
         run: |
-          pip install setuptools wheel twine
+          python -m pip install "build>=0.10.0" "twine>=4.0.2"
+      - name: Build package
+        run: |
+          python -m build .
+      - name: Check long description
+        run: python -m twine check dist/*
       - name: Publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          python setup.py sdist bdist_wheel
           twine upload dist/*
