@@ -19,7 +19,8 @@ Install this plugin in the same environment as Datasette.
 This plugin allows writing to a datasette database via hmac-signed http POST calls.
 
 Example for metadata.yml (for usage to receive texts from https://nlg.ax/):
-```
+
+```yaml
 plugins:
   datasette-webhook-write:
     webhook_secret:
@@ -42,7 +43,8 @@ The url to upload to the datasette instance is ``/-/webhook-write/``.
 The json data pushed has to be signed with the `WEBHOOK_SECRET` and added to the headers of the POST call.
 
 Generate the hmac signature (where `document` is the data you want to send, and `WEBHOOK_SECRET` is the secret only pushing+receving parties should know):
-```
+
+```python
 digest = hmac.new(
     key=WEBHOOK_SECRET.encode(),
     msg=json.dumps(document).encode(),
@@ -62,12 +64,12 @@ The pushed data is written to the database only when secret+document are generat
 To set up this plugin locally, first checkout the code. Then create a new virtual environment:
 
     cd datasette-webhook-write
-    python3 -mvenv venv
+    python -m venv venv
     source venv/bin/activate
 
 Now install the dependencies and test dependencies:
 
-    pip install -e '.[test]'
+    python -m pip install -e '.[test]'
 
 To run the tests:
 

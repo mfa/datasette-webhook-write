@@ -8,6 +8,8 @@ from datasette import hookimpl
 from datasette.utils import sqlite3
 from datasette.utils.asgi import Response
 
+__version__ = "0.3"
+
 
 def check_signature(sig, data, secret):
     try:
