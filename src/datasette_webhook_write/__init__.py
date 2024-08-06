@@ -77,7 +77,7 @@ async def insert_webhook_data(request, datasette):
         return Response.json({"error": "Permission denied", "status": 403}, status=403)
 
     if "text_modified" not in post_json:
-        post_json["text_modified"] = datetime.datetime.utcnow().isoformat()
+        post_json["text_modified"] = datetime.datetime.now(datetime.UTC).isoformat()
 
     def insert(conn):
         db = sqlite_utils.Database(conn)

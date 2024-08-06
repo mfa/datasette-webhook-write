@@ -82,7 +82,7 @@ def document_future():
 @pytest.fixture(name="document2")
 def document2_fixture(document):
     d = copy.copy(document)
-    d["text_modified"] = datetime.datetime.utcnow().isoformat()
+    d["text_modified"] = datetime.datetime.now(datetime.UTC).isoformat()
     return d
 
 
