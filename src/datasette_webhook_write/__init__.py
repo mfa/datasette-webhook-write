@@ -8,7 +8,7 @@ from datasette import hookimpl
 from datasette.utils import sqlite3
 from datasette.utils.asgi import Response
 
-__version__ = "0.4"
+__version__ = "0.5"
 
 
 def check_signature(sig, data, secret, digestmod):
