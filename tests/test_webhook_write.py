@@ -89,7 +89,9 @@ def document2_fixture(document):
 def calculate_signature(data):
     digest = hmac.new(
         key=TEST_SECRET.encode(),
-        msg=json.dumps(data).encode(),
+        msg=json.dumps(
+            data, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8"),
         digestmod=hashlib.sha1,
     )
     return {
