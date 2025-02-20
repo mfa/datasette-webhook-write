@@ -11,11 +11,11 @@ from datasette.utils.asgi import Response
 __version__ = "0.4"
 
 
-def check_signature(sig, data, secret):
+def check_signature(sig, data, secret, digestmod):
     try:
         signature_header = sig.replace("sha1=", "")
         signature_content = hmac.new(
-            key=secret.encode("utf-8"), msg=data, digestmod=hashlib.sha1
+            key=secret.encode("utf-8"), msg=data, digestmod=getattr(hashlib, digestmod)
         ).hexdigest()
     except AttributeError:
         pass
@@ -72,8 +72,9 @@ async def insert_webhook_data(request, datasette):
     except json.decoder.JSONDecodeError:
         return Response.json({"error": "wrong format", "status": 400}, status=400)
 
+    digestmod = plugin_config.get("digestmod", "sha1")
     signature = request.headers.get(http_header_name)
-    if not check_signature(signature, data, secret):
+    if not check_signature(signature, data, secret, digestmod):
         return Response.json({"error": "Permission denied", "status": 403}, status=403)
 
     if "text_modified" not in post_json:

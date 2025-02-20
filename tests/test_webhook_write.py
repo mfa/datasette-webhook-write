@@ -45,6 +45,14 @@ def ds(db_path):
     return ds
 
 
+@pytest.fixture
+def ds_sha256(db_path):
+    metadata = copy.deepcopy(TEST_METADATA)
+    metadata["plugins"]["datasette-webhook-write"]["digestmod"] = "sha256"
+    ds = Datasette([db_path], metadata=metadata)
+    return ds
+
+
 @pytest.mark.asyncio
 async def test_get_is_not_allowed(ds):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
@@ -99,6 +107,19 @@ def calculate_signature(data):
     }
 
 
+def calculate_signature_sha256(data):
+    digest = hmac.new(
+        key=TEST_SECRET.encode(),
+        msg=json.dumps(
+            data, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8"),
+        digestmod=hashlib.sha256,
+    )
+    return {
+        "X-SIGNATURE": f"{digest.hexdigest()}",
+    }
+
+
 @pytest.fixture()
 def signature(document):
     return calculate_signature(document)
@@ -107,6 +128,11 @@ def signature(document):
 @pytest.fixture()
 def signature2(document2):
     return calculate_signature(document2)
+
+
+@pytest.fixture()
+def signature_sha256(document):
+    return calculate_signature_sha256(document)
 
 
 @pytest.mark.asyncio
@@ -133,6 +159,31 @@ async def test_actual_write(ds, document, signature):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post(
             "http://localhost/-/webhook-write/", json=document, headers=signature
+        )
+        assert 200 == response.status_code
+
+        # check if write was successful
+        response = await client.get("http://localhost/test/table1.json?_shape=array")
+        data = response.json()[0]
+
+        # test if text_modified was added
+        assert data.get("text_modified")
+        assert data["text_modified"].startswith("20")
+
+        # rowid is only set, when no "pk" was set
+        # text_modified is added if not exisiting in document
+        data.pop("rowid")
+        data.pop("text_modified")
+        assert data == document
+
+
+@pytest.mark.asyncio
+async def test_actual_write_sha256(ds_sha256, document, signature_sha256):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=ds_sha256.app())
+    ) as client:
+        response = await client.post(
+            "http://localhost/-/webhook-write/", json=document, headers=signature_sha256
         )
         assert 200 == response.status_code
 
