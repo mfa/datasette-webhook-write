@@ -47,7 +47,7 @@ def ds(db_path):
 
 @pytest.mark.asyncio
 async def test_get_is_not_allowed(ds):
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.get("http://localhost/-/webhook-write/")
         assert response.json() == {"error": "only POST is allowed", "status": 400}
         assert 400 == response.status_code
@@ -57,7 +57,7 @@ async def test_get_is_not_allowed(ds):
 async def test_settings_missing():
     # FIXME: test for all setting names, not only the first one
     ds = Datasette([], memory=True)
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post("http://localhost/-/webhook-write/")
         assert response.json() == {
             "error": ">webhook_secret< needs to be configured in metadata.",
@@ -68,7 +68,7 @@ async def test_settings_missing():
 
 @pytest.mark.asyncio
 async def test_malformed_json(ds):
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post("http://localhost/-/webhook-write/")
         assert response.json() == {"error": "wrong format", "status": 400}
         assert 400 == response.status_code
@@ -109,7 +109,7 @@ def signature2(document2):
 
 @pytest.mark.asyncio
 async def test_no_signature(ds, document):
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post("http://localhost/-/webhook-write/", json=document)
         assert response.json() == {"error": "Permission denied", "status": 403}
         assert 403 == response.status_code
@@ -118,7 +118,7 @@ async def test_no_signature(ds, document):
 @pytest.mark.asyncio
 async def test_wrong_signature(ds, document, signature):
     signature["X-SIGNATURE"] = "wrong"
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post(
             "http://localhost/-/webhook-write/", json=document, headers=signature
         )
@@ -128,7 +128,7 @@ async def test_wrong_signature(ds, document, signature):
 
 @pytest.mark.asyncio
 async def test_actual_write(ds, document, signature):
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post(
             "http://localhost/-/webhook-write/", json=document, headers=signature
         )
@@ -156,7 +156,7 @@ async def test_write_replace(db_path, document2, signature2, pk):
     metadata["plugins"]["datasette-webhook-write"]["use_pk"] = pk
     ds = Datasette([db_path], metadata=metadata)
 
-    async with httpx.AsyncClient(app=ds.app()) as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=ds.app())) as client:
         response = await client.post(
             "http://localhost/-/webhook-write/", json=document2, headers=signature2
         )
