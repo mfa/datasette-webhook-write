@@ -88,10 +88,14 @@ async def insert_webhook_data(request, datasette):
             db[table_name].insert_all(
                 [post_json],
                 replace=True,
+                alter=True,
                 pk=use_pk,
             )
         else:
-            db[table_name].insert_all([post_json])
+            db[table_name].insert_all(
+                [post_json],
+                alter=True,
+            )
         return
 
     try:
